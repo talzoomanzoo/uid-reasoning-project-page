@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Revisiting the Uniform Information Density Hypothesis in LLM Reasoning</title>
+    <meta name="description" content="ACL 2026 Findings. We revisit UID in LLM reasoning with entropy-based metrics for local and global information flow across reasoning benchmarks.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #0f1419;
+            --muted: #5c6670;
+            --line: #e2e6ea;
+            --surface: #fafbfc;
+            --card: #ffffff;
+            --accent: #1a5f4a;
+            --accent-soft: #e8f2ee;
+            --warm: #c45c26;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Source Sans 3", system-ui, sans-serif;
+            font-size: 1.0625rem;
+            line-height: 1.65;
+            color: var(--ink);
+            background: var(--surface);
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration-thickness: 1px;
+            text-underline-offset: 3px;
+        }
+
+        a:hover {
+            color: #134538;
+        }
+
+        .wrap {
+            max-width: 46rem;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        header.hero {
+            text-align: center;
+            padding: 2rem 0 2.5rem;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 2.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--warm);
+            margin-bottom: 1rem;
+        }
+
+        h1 {
+            font-family: Fraunces, Georgia, serif;
+            font-weight: 600;
+            font-size: clamp(1.65rem, 4.5vw, 2.35rem);
+            line-height: 1.2;
+            margin: 0 0 1.25rem;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        .authors {
+            font-size: 1.05rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .authors a {
+            font-weight: 600;
+            color: var(--ink);
+            text-decoration: underline;
+            text-decoration-color: rgba(26, 95, 74, 0.35);
+            text-underline-offset: 3px;
+        }
+
+        .authors a:hover {
+            color: var(--accent);
+            text-decoration-color: var(--accent);
+        }
+
+        .affil {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .emails {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem;
+            justify-content: center;
+            margin-top: 1.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.55rem 1.1rem;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #134538;
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: var(--card);
+            color: var(--ink);
+            border-color: var(--line);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        section {
+            margin-bottom: 2.75rem;
+        }
+
+        h2 {
+            font-family: Fraunces, Georgia, serif;
+            font-size: 1.35rem;
+            font-weight: 600;
+            margin: 0 0 1rem;
+            color: var(--ink);
+        }
+
+        .abstract {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 1.35rem 1.5rem;
+            box-shadow: 0 1px 2px rgba(15, 20, 25, 0.04);
+        }
+
+        .abstract p {
+            margin: 0;
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .takeaway {
+            background: var(--accent-soft);
+            border-left: 4px solid var(--accent);
+            padding: 1rem 1.25rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1.25rem 0 0;
+            font-size: 0.98rem;
+        }
+
+        .takeaway strong {
+            color: var(--accent);
+        }
+
+        ul.contributions {
+            margin: 0;
+            padding-left: 1.2rem;
+        }
+
+        ul.contributions li {
+            margin-bottom: 0.65rem;
+            padding-left: 0.25rem;
+        }
+
+        ul.contributions li:last-child {
+            margin-bottom: 0;
+        }
+
+        .meta-grid {
+            display: grid;
+            gap: 0.75rem;
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .meta-grid dt {
+            font-weight: 600;
+            color: var(--ink);
+            margin: 0;
+        }
+
+        .meta-grid dd {
+            margin: 0 0 0.5rem;
+        }
+
+        pre.cite {
+            font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+            font-size: 0.78rem;
+            line-height: 1.5;
+            background: #0f1419;
+            color: #e8eaed;
+            padding: 1rem 1.1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 0;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--muted);
+            padding-top: 1rem;
+            border-top: 1px solid var(--line);
+        }
+
+        sup {
+            font-size: 0.65em;
+            vertical-align: super;
+        }
+
+        .figure-panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 1rem 1.1rem 1.2rem;
+            box-shadow: 0 1px 2px rgba(15, 20, 25, 0.04);
+        }
+
+        .figure-img-wrap {
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            overflow: hidden;
+            background: #fff;
+            text-align: center;
+        }
+
+        .figure-img-wrap img {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 100%;
+        }
+
+        .paper-fig-caption {
+            margin: 1rem 0 0;
+            font-size: 0.95rem;
+            color: var(--muted);
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        .paper-fig-caption p {
+            margin: 0 0 0.75rem;
+        }
+
+        .paper-fig-caption p:last-child {
+            margin-bottom: 0;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <header class="hero">
+            <span class="badge">Accepted · ACL 2026 (Findings) · arXiv 2510.06953</span>
+            <h1>Revisiting the Uniform Information Density Hypothesis in LLM Reasoning</h1>
+            <p class="authors">
+                <a href="https://minjugwak.netlify.app/">Minju Gwak</a><sup>1,2</sup>,
+                <a href="https://guijinson.github.io/">Guijin Son</a><sup>2</sup>,
+                <a href="https://sites.google.com/view/jaehyungkim">Jaehyung Kim</a><sup>1</sup>
+            </p>
+            <p class="affil">
+                <sup>1</sup>Yonsei University
+                &nbsp;·&nbsp;
+                <sup>2</sup>OneLine AI
+            </p>
+            <p class="emails">
+                mjgwak@yonsei.ac.kr, jaehyungk@yonsei.ac.kr
+            </p>
+            <nav class="actions" aria-label="Paper links">
+                <a class="btn btn-primary" href="https://arxiv.org/pdf/2510.06953">Paper (PDF)</a>
+                <a class="btn btn-secondary" href="https://arxiv.org/abs/2510.06953">arXiv</a>
+                <a class="btn btn-secondary" href="https://github.com/talzoomanzoo/uid-reasoning">Code</a>
+            </nav>
+        </header>
+
+        <section aria-labelledby="abstract-heading">
+            <h2 id="abstract-heading">Abstract</h2>
+            <div class="abstract">
+                <p>
+                    The Uniform Information Density (UID) hypothesis proposes that effective communication is achieved by maintaining a stable flow of information. In this work, we revisit this principle in the context of Large Language Model (LLM) reasoning, asking whether step-level uniformity reflects reasoning quality. To this end, we introduce a novel framework to quantify uniformity of information flow at both local and global levels, using an entropy-based stepwise density metric. Across experiments on seven reasoning benchmarks, we see a counter-intuitive pattern: high-quality reasoning exhibits smooth step-by-step transitions (local uniformity) and structured, non-uniform information flow at the trajectory level (global non-uniformity). The results demonstrate that these uniformities outperform alternative internal signals as predictors of reasoning quality, and such divergence with human communication is not a model deficiency, but a byproduct of distinct objectives between human communication and LLM reasoning.
+                </p>
+                <p class="takeaway">
+                    <strong>Key finding.</strong> Successful LLM reasoning aligns with <em>high local uniformity</em> and <em>low global uniformity</em> in stepwise entropy—differing from human UID, yet useful for Best-of-N selection and failure prediction.
+                </p>
+            </div>
+        </section>
+
+        <section aria-labelledby="fig-heading">
+            <h2 id="fig-heading">Figure 1 · Reasoning as information flow</h2>
+            <figure class="figure-panel">
+                <div class="figure-img-wrap">
+                    <img
+                        src="figures/figure1.png"
+                        loading="lazy"
+                        decoding="async"
+                        alt="Human communication with uniform information density between speaker and listener; LLM reasoning failure modes showing local overload as a sharp spike and global underuse as a flat line within an effective capacity range."
+                    >
+                </div>
+                <figcaption class="paper-fig-caption">
+                    <p>Reasoning as information flow. Human communication distributes information smoothly to respect channel capacity, enabling successful understanding.</p>
+                    <p>LLM reasoning transmits information across reasoning steps; failures arise from local overload (sharp spikes) and underuse (flat trivial trajectory).</p>
+                </figcaption>
+            </figure>
+        </section>
+
+        <section aria-labelledby="contrib-heading">
+            <h2 id="contrib-heading">Contributions</h2>
+            <ul class="contributions">
+                <li>We revisit the Uniform Information Density hypothesis in the setting of chain-of-thought LLM reasoning.</li>
+                <li>We find that global non-uniformity together with local uniformity in surprisal correlates with reasoning success on challenging math benchmarks.</li>
+                <li>We show that deviations from these patterns act as trace-level signals for predicting failures, complementing response-level aggregation and evaluation.</li>
+            </ul>
+        </section>
+
+        <section aria-labelledby="cite-heading">
+            <h2 id="cite-heading">Citation</h2>
+            <pre class="cite" id="bibtex">@article{gwak2025revisiting,
+  title={Revisiting the Uniform Information Density Hypothesis in LLM Reasoning Traces},
+  author={Gwak, Minju and Son, Guijin and Kim, Jaehyung},
+  journal={arXiv preprint arXiv:2510.06953},
+  year={2025}
+}</pre>
+        </section>
+
+        <footer>
+            ACL 2026 Findings · <a href="https://arxiv.org/abs/2510.06953">arXiv:2510.06953</a>
+        </footer>
+    </div>
+</body>
+</html>
